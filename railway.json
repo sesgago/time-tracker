@@ -1,7 +1,8 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm run build"
+    "buildCommand": "npm run build",
+    "watchPatterns": ["server/**", "client/**", "package.json"]
   },
   "deploy": {
     "startCommand": "npm start",
