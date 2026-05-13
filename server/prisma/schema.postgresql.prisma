@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("tech")
+  verified  Boolean  @default(false)
+  verifyToken String?
+  createdAt DateTime @default(now())
+
+  assignedTasks Task[] @relation("TaskAssigned")
+  createdTasks Task[] @relation("TaskCreator")
+  timeEntries TimeEntry[]
+  createdClients Client[] @relation("ClientCreator")
+  assignedTickets Ticket[] @relation("TicketTechnician")
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  notes     String?
+  createdBy Int
+  createdAt DateTime @default(now())
+
+  creator   User     @relation("ClientCreator", fields: [createdBy], references: [id])
+  sectors   Sector[]
+  users     ClientUser[]
+  tasks     Task[]
+  timeEntries TimeEntry[]
+  tickets   Ticket[]
+}
+
+model Sector {
+  id       Int    @id @default(autoincrement())
+  name     String
+  clientId Int
+
+  client     Client       @relation(fields: [clientId], references: [id])
+  clientUsers ClientUser[]
+  tickets    Ticket[]
+}
+
+model ClientUser {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role     String @default("basic")
+  clientId Int
+  sectorId Int?
+
+  client Client  @relation(fields: [clientId], references: [id])
+  sector Sector? @relation(fields: [sectorId], references: [id])
+  tickets Ticket[]
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  description String
+  status      String   @default("pending")
+  priority    String   @default("medium")
+  clientId    Int
+  assignedTo  Int
+  createdBy   Int
+  createdAt   DateTime @default(now())
+
+  client      Client     @relation(fields: [clientId], references: [id])
+  assigned    User       @relation("TaskAssigned", fields: [assignedTo], references: [id])
+  creator     User       @relation("TaskCreator", fields: [createdBy], references: [id])
+  timeEntries TimeEntry[]
+}
+
+model TimeEntry {
+  id          Int      @id @default(autoincrement())
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?
+  taskId      Int?
+  userId      Int
+  clientId    Int
+  description String?
+
+  task   Task?  @relation(fields: [taskId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+}
+
+model Ticket {
+  id            Int      @id @default(autoincrement())
+  subject       String
+  description   String
+  status        String   @default("open")
+  clientId      Int
+  sectorId      Int?
+  createdBy     Int
+  assignedTo    Int?
+  createdAt     DateTime @default(now())
+
+  client      Client      @relation(fields: [clientId], references: [id])
+  sector      Sector?     @relation(fields: [sectorId], references: [id])
+  creator     ClientUser  @relation(fields: [createdBy], references: [id])
+  technician  User?       @relation("TicketTechnician", fields: [assignedTo], references: [id])
+}
